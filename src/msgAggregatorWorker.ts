@@ -19,7 +19,9 @@ ctx.addEventListener("message", (event) => {
 let buffer = "";
 let discardFirstLine = true;
 const separator = "\n";
-var re = new RegExp(`(${separator})`, "g");
+const delimiter = "[, \t]+"; // Serial Plotter protocol supports Comma, Space & Tab characters as delimiters
+var separatorRegex = new RegExp(`(${separator})`, "g");
+var delimiterRegex = new RegExp(`(${delimiter})`, "g");
 
 export const parseSerialMessages = (
   messages: string[]
@@ -47,7 +49,7 @@ export const parseSerialMessages = (
 
   //add any leftover from the buffer to the first line
   const messagesAndBuffer = ((buffer || "") + joinMessages)
-    .split(re)
+    .split(separatorRegex)
     .filter((message) => message.length > 0);
 
   // remove the previous buffer
@@ -74,7 +76,7 @@ export const parseSerialMessages = (
       // if we find a colon, we assume the latter is being used
       let tokens: string[] = [];
       if (message.indexOf(":") > 0) {
-        message.split(",").forEach((keyValue: string) => {
+        message.split(delimiterRegex).forEach((keyValue: string) => {
           let [key, value] = keyValue.split(":");
           key = key && key.trim();
           value = value && value.trim();
@@ -84,7 +86,7 @@ export const parseSerialMessages = (
         });
       } else {
         // otherwise they are spaces
-        const values = message.split(/\s/);
+        const values = message.split(delimiterRegex);
         values.forEach((value, i) => {
           if (value.length) {
             tokens.push(...[`value ${i + 1}`, value]);
