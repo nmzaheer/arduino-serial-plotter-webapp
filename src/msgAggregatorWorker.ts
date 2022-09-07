@@ -21,7 +21,7 @@ let discardFirstLine = true;
 const separator = "\n";
 const delimiter = "[, \t]+"; // Serial Plotter protocol supports Comma, Space & Tab characters as delimiters
 var separatorRegex = new RegExp(`(${separator})`, "g");
-var delimiterRegex = new RegExp(`(${delimiter})`, "g");
+var delimiterRegex = new RegExp(delimiter, "g");
 
 export const parseSerialMessages = (
   messages: string[]
@@ -69,9 +69,11 @@ export const parseSerialMessages = (
     .forEach((message) => {
       const parsedLine: { [key: string]: number } = {};
 
-      //there are two supported formats:
-      // format1: <value1> <value2> <value3>
-      // format2: name1:<value1>,name2:<value2>,name3:<value3>
+      // SerialPlotter protocol specifies 3 message formats. The following 2 formats are supported
+      // Value only format: <value1> <value2> <value3>
+      // Label-Value format: name1:<value1>,name2:<value2>,name3:<value3>
+
+      // Part Separator symbols i.e. Space, Tab & Comma are fully supported
 
       // if we find a colon, we assume the latter is being used
       let tokens: string[] = [];
@@ -85,7 +87,7 @@ export const parseSerialMessages = (
           }
         });
       } else {
-        // otherwise they are spaces
+        // otherwise they are unlabelled
         const values = message.split(delimiterRegex);
         values.forEach((value, i) => {
           if (value.length) {
