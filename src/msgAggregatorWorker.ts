@@ -18,7 +18,7 @@ ctx.addEventListener("message", (event) => {
 
 let buffer = "";
 let discardFirstLine = true;
-const separator = "\n";
+const separator = "\r?\n";
 const delimiter = "[, \t]+"; // Serial Plotter protocol supports Comma, Space & Tab characters as delimiters
 var separatorRegex = new RegExp(`(${separator})`, "g");
 var delimiterRegex = new RegExp(delimiter, "g");
@@ -33,10 +33,10 @@ export const parseSerialMessages = (
   // so we need to discard it and start aggregating from the first encountered separator
   let joinMessages = messages.join("");
   if (discardFirstLine) {
-    const firstSeparatorIndex = joinMessages.indexOf(separator);
-    if (firstSeparatorIndex > -1) {
+    const separatorMatch = separatorRegex.exec(joinMessages);
+	  if (separatorMatch && separatorMatch.index > -1) {
       joinMessages = joinMessages.substring(
-        firstSeparatorIndex + separator.length
+        separatorMatch.index + separatorMatch[0].length
       );
       discardFirstLine = false;
     } else {
@@ -55,7 +55,7 @@ export const parseSerialMessages = (
   // remove the previous buffer
   buffer = "";
   // check if the last message contains the delimiter, if not, it's an incomplete string that needs to be added to the buffer
-  if (messagesAndBuffer[messagesAndBuffer.length - 1] !== separator) {
+  if (!separatorRegex.test(messagesAndBuffer[messagesAndBuffer.length - 1])) {
     buffer = messagesAndBuffer[messagesAndBuffer.length - 1];
     messagesAndBuffer.splice(-1);
   }
@@ -65,15 +65,14 @@ export const parseSerialMessages = (
 
   // for each line, explode variables
   messagesAndBuffer
-    .filter((message) => message !== separator)
+  .filter((message) => !separatorRegex.test(message))
     .forEach((message) => {
       const parsedLine: { [key: string]: number } = {};
-
+      
+      // Part Separator symbols i.e. Space, Tab & Comma are fully supported
       // SerialPlotter protocol specifies 3 message formats. The following 2 formats are supported
       // Value only format: <value1> <value2> <value3>
       // Label-Value format: name1:<value1>,name2:<value2>,name3:<value3>
-
-      // Part Separator symbols i.e. Space, Tab & Comma are fully supported
 
       // if we find a colon, we assume the latter is being used
       let tokens: string[] = [];
